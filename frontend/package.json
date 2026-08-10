@@ -1,0 +1,30 @@
+{
+  "name": "job-auto-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "牛人Agent - 智能求职投递系统 - 前端（JobClaw）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0",
+    "pinia": "^2.2.0",
+    "element-plus": "^2.8.0",
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.7.0",
+    "dayjs": "^1.11.13",
+    "echarts": "^5.5.0",
+    "vue-echarts": "^7.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.0",
+    "vite": "^5.4.0",
+    "sass": "^1.77.0",
+    "unplugin-auto-import": "^0.18.0",
+    "unplugin-vue-components": "^0.27.0"
+  }
+}

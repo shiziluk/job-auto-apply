@@ -1,0 +1,62 @@
+﻿# ===== 敏感数据（绝不提交） =====
+# 浏览器登录态 / Cookie / 用户数据
+.browser_data/
+backend/.browser_data/
+backend/cookies/
+cookies/
+uploads/
+backend/uploads/
+screenshots/
+
+# 数据库（含简历、投递记录、会话凭据）
+*.db
+*.sqlite3
+*.sqlite
+
+# 日志与运行产物
+*.log
+*.pid
+
+# 内部数据文件（搜索结果/审计/推荐流等）
+*.json
+!frontend/package.json
+!frontend/package-lock.json
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+env/
+venv/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# ===== 环境变量 =====
+.env
+.env.local
+.env.*.local
+
+# ===== 前端 =====
+frontend/node_modules/
+frontend/dist/
+*.local
+
+# ===== IDE / OS =====
+.idea/
+.vscode/
+.jbeval/
+.DS_Store
+Thumbs.db
+
+# ===== 临时脚本与内部文档 =====
+_*.py
+_*.txt
+_*.log
+docs/_ref/
+docs/CONTEXT_STATE.md
+
+# ===== 安装包 / 打包产物 =====
+*.exe
+backend/installer/
+backend/build/
