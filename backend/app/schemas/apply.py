@@ -1,4 +1,4 @@
-﻿"""
+"""
 投递任务 & 投递记录 相关Schema
 """
 import datetime
@@ -160,6 +160,7 @@ class JobSearchRequest(BaseModel):
     session_id: int = Field(description="平台登录会话ID")
     task_id: Optional[int] = Field(default=None, description="可选，基于任务配置搜索")
     keywords: Union[str, List[str]] = Field(description="搜索关键词，支持多个（列表或逗号分隔）")
+    jd_ai_check: bool = Field(default=True, description="JD级AI校验：仅保留AI应用开发岗。投普通开发/测试岗时应关闭")
     headless: Optional[bool] = Field(default=None, description="是否无头运行，空则用全局配置PLAYWRIGHT_HEADLESS")
     city_code: Optional[Union[str, List[str]]] = Field(default=None, description="城市编码，支持多个（多城市会逐个搜索后合并），空=全国")
     salary_min: Optional[int] = Field(default=None)

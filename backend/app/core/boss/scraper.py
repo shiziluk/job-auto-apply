@@ -1,4 +1,4 @@
-﻿"""
+"""
 Boss直聘 - 职位搜索与抓取模块
 参考 JobClaw scraper/boss.py + boss_push 油猴脚本的筛选逻辑
 实现：搜索条件组装URL -> 抓取列表页 -> 解析成统一Job对象 -> 应用黑白名单过滤
@@ -15,7 +15,7 @@ from urllib.parse import urlencode, quote
 _JOBLIST_API_MIN_INTERVAL = 2.5
 _JOBLIST_API_LAST_CALL = 0.0
 _JOBLIST_CHALLENGE_UNTIL = 0.0  # 触发code:37后全局冷却截止时间，避免连环风控
-_JOBLIST_API_FAST_ENABLED = True  # 置False可临时关闭API直取，走页面加载路径
+_JOBLIST_API_FAST_ENABLED = True  # 置False可临时关闭API直取，走页面加载路径（10-24 验证：慢路径捕获失灵，必须走API直取）
 
 from app.core.base import BasePlatform, Job
 
@@ -34,7 +34,7 @@ class BossScraperMixin(BasePlatform):
     }
 
     # 经验编码
-    EXP_CODES = {0: "", 1: "102", 2: "103", 3: "104", 4: "105", 5: "106", 6: "107"}
+    EXP_CODES = {0: "101", 1: "102", 2: "103", 3: "104", 4: "105", 5: "106", 6: "107"}  # 0=经验不限(101)，便于[0,1,2]=不限+应届+1年以内
     # 学历编码
     EDU_CODES = {0: "", 1: "202", 2: "203", 3: "204", 4: "205"}
     # 公司规模编码（BOSS搜索页 scale 参数，实测 301=0-20人 / 302=20-99人）
@@ -82,6 +82,8 @@ class BossScraperMixin(BasePlatform):
     "硬件", "光学", "射频", "芯片", "嵌入式", "电池", "光伏", "热管理",
     "电推", "体系", "fpga", "光模块", "硅光", "智能驾驶", "数字ic",
     "ic设计", "驱动开发", "电镜",
+        # 2026-08-11 剔除池(231个)词频学习新增：这些词在合格池出现0次、剔除池高频
+        "策划", "专家", "老师", "教练", "主管", "运维", "Java", "自动驾驶",
     ]
 
     # 算法/研究向岗位词：算法/深度学习/机器学习/多模态/图像/框架等属于模型研发，
@@ -381,22 +383,22 @@ class BossScraperMixin(BasePlatform):
             if rule_res == "whitelist":
                 whitelist_count += 1
 
-            # 5.6 标题相关度过滤：开发/工程类关键词启用严格过滤（AI+开发词）；
-            #     其他关键词启用宽松过滤（排除词 + 至少含一个岗位相关词）
-            if self._is_dev_role_keywords(keywords):
-                if self._is_irrelevant_title(job.job_title):
-                    # Boss按JD匹配搜索词，标题常为通用开发岗（如"研发工程师"）。
-                    # 启用JD校验时这类岗位不直接剔除，标记后读JD确认AI内容
-                    if jd_ai_check and self._is_generic_dev_title(job.job_title) and len(jd_candidates) < 8:
-                        job.match_reason = "标题通用，待JD校验"
-                        job.need_jd_check = True
-                        jd_candidates.append(job)
-                        continue
-                    irrelevant_count += 1
-                    continue
-            elif self._is_loose_irrelevant_title(job.job_title):
-                irrelevant_count += 1
-                continue
+            # 5.6 标题相关度过滤 —— 10-21 注释停用（原过滤把"研发工程师"等通用标题全杀，
+            #     30条候选剔17条导致近圈0候选；改由脚本侧近圈白名单+用户人工过目兜底）
+            # if self._is_dev_role_keywords(keywords):
+            #     if self._is_irrelevant_title(job.job_title):
+            #         # Boss按JD匹配搜索词，标题常为通用开发岗（如"研发工程师"）。
+            #         # 启用JD校验时这类岗位不直接剔除，标记后读JD确认AI内容
+            #         if jd_ai_check and self._is_generic_dev_title(job.job_title) and len(jd_candidates) < 8:
+            #             job.match_reason = "标题通用，待JD校验"
+            #             job.need_jd_check = True
+            #             jd_candidates.append(job)
+            #             continue
+            #         irrelevant_count += 1
+            #         continue
+            # elif self._is_loose_irrelevant_title(job.job_title):
+            #     irrelevant_count += 1
+            #     continue
 
             # 5.7 已投递公司过滤：该公司下所有职位不再推荐，避免重复投同一家公司
             if (applied_company_ids and job.company_id and job.company_id in applied_company_ids) or \
@@ -414,21 +416,21 @@ class BossScraperMixin(BasePlatform):
                 rest_policy_count += 1
                 continue
 
-            # 5.9 经验要求默认过滤：仅在用户未指定经验时生效（只要3年以内的岗位：
-            #     经验不限/在校应届/1年以内/1-3年）；用户手动选了经验则以用户选择为准
-            if user_exp_unset and job.experience and re.match(
-                    r"^(3-5年|5-10年|10年以上|3年以上|5年以上)", job.experience):
-                job.match_reason = f"经验要求过高（{job.experience}），跳过"
-                exp_count += 1
-                continue
+            # 5.9 经验要求默认过滤 —— 10-21 注释停用（近圈候选池太小，经验高的岗也放行，
+            #     由用户过目清单时自行取舍；如需恢复取消注释即可）
+            # if user_exp_unset and job.experience and re.match(
+            #         r"^(3-5年|5-10年|10年以上|3年以上|5年以上)", job.experience):
+            #     job.match_reason = f"经验要求过高（{job.experience}），跳过"
+            #     exp_count += 1
+            #     continue
 
-            # 5.10 公司规模默认过滤：仅在用户未指定规模时生效（只要100人及以上公司，
-            #      排除0-20人/20-99人等小公司）；用户手动选了规模则以用户选择为准
-            if user_scale_unset and job.company_size and re.match(
-                    r"^(0-20人|20-99人|少于|1-49人|50-99人)", job.company_size):
-                job.match_reason = f"公司规模过小（{job.company_size}），跳过"
-                scale_count += 1
-                continue
+            # 5.10 公司规模默认过滤 —— 10-21 注释停用（罗村/大沥近圈多为20-99人小公司，
+            #     原默认排除小公司会把近圈候选杀光；如需恢复取消注释即可）
+            # if user_scale_unset and job.company_size and re.match(
+            #         r"^(0-20人|20-99人|少于|1-49人|50-99人)", job.company_size):
+            #     job.match_reason = f"公司规模过小（{job.company_size}），跳过"
+            #     scale_count += 1
+            #     continue
 
             # 5.11 薪资下限过滤：用户指定了薪资下限时，剔除明显低于下限的职位（Boss区间匹配会带出低薪岗）
             if salary_min and job.salary_min is not None and int(job.salary_min) < int(salary_min):

@@ -1,4 +1,4 @@
-﻿"""
+"""
 职位搜索 & 投递 & 投递记录 查询 API
 对接 Playwright 的 search_jobs / apply_batch 能力
 """
@@ -134,6 +134,7 @@ async def search_jobs(
             applied_company_names,
             rule_dicts,
             req.headless,
+            getattr(req, "jd_ai_check", True),
         )
         result = search_result
         return ResponseModel.success(data=result, message=f"抓取到 {len(result)} 个职位")
@@ -150,7 +151,7 @@ async def search_jobs(
 def _run_search_sync(cookies, keywords, city_code, salary_min, salary_max,
                      experience, education, company_scales, rest_policy, page, page_size,
                      already_applied, applied_company_ids, applied_company_names,
-                     rule_dicts, headless=None):
+                     rule_dicts, headless=None, jd_ai_check=True):
     """在独立线程中运行搜索"""
     import asyncio
     import sys
@@ -164,6 +165,7 @@ def _run_search_sync(cookies, keywords, city_code, salary_min, salary_max,
             cookies, keywords, city_code, salary_min, salary_max,
             experience, education, company_scales, rest_policy, page, page_size,
             already_applied, applied_company_ids, applied_company_names, rule_dicts, headless,
+            jd_ai_check,
         ))
     finally:
         loop.close()
@@ -203,7 +205,7 @@ async def _try_recover_risk(page_obj) -> bool:
 async def _do_search(cookies, keywords, city_code, salary_min, salary_max,
                      experience, education, company_scales, rest_policy, page, page_size,
                      already_applied, applied_company_ids, applied_company_names,
-                     rule_dicts, headless=None):
+                     rule_dicts, headless=None, jd_ai_check=True):
     """实际的搜索流程（支持多关键词/多城市：单个浏览器逐个搜索，按job_id去重合并）"""
     from app.core import BrowserContextManager, create_platform
 
@@ -290,7 +292,7 @@ async def _do_search(cookies, keywords, city_code, salary_min, salary_max,
                 applied_company_ids=applied_company_ids,
                 applied_company_names=applied_company_names,
                 filter_rules=rule_dicts,
-                jd_ai_check=True,
+                jd_ai_check=jd_ai_check,
             )
 
         async def _search_one(kw, city):
@@ -990,6 +992,9 @@ def get_job_keywords():
         # 2026-08-10 三城市市场标题词频学习新增（全栈12/43、Python高频、智能体/大模型）
         "全栈开发", "全栈开发工程师", "AI 全栈工程师", "Python 开发", "Python 开发工程师",
         "Python 工程师", "智能体开发", "智能体开发工程师", "Python 大模型", "Python 大模型开发",
+        # 2026-08-11 第22-24轮搜索验证新增（经验≤1年方向均有效）
+        "AI 应用", "智能应用", "智能应用开发", "AI 研发", "人工智能工程师",
+        "AIGC 开发", "AI 编程", "AI 编程开发",
     ]
     for s in extra:
         if s not in suggestions:

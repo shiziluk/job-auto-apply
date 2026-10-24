@@ -1,4 +1,4 @@
-﻿"""
+"""
 FastAPI 应用入口
 """
 import os
@@ -30,55 +30,6 @@ from app.config import settings
 from app.database import Base, engine
 
 
-
-# ============ 后台自动跟进周期任务 ============
-FOLLOWUP_INTERVAL = 7200  # 每2小时扫描一次（用户出门时自动跟进）
-FOLLOWUP_FIRST_DELAY = 60  # 启动后1分钟开始首次扫描
-
-
-async def _followup_loop():
-    """后台周期任务：Boss聊天页自动跟进扫描（仅当无投递任务运行时执行）"""
-    from app.api.apply import RUNNING_APPLY_TASKS
-    from app.database import SessionLocal
-    from app.models import ApplyTask, PlatformSession
-    from app.services.followup_service import run_followup_scan_sync
-
-    await asyncio.sleep(FOLLOWUP_FIRST_DELAY)
-    while True:
-        try:
-            # 浏览器profile独占：有投递任务运行时跳过，避免两个Firefox实例争用同一profile
-            busy = bool(RUNNING_APPLY_TASKS)
-            if not busy:
-                db = SessionLocal()
-                try:
-                    busy = db.query(ApplyTask).filter(ApplyTask.status == "running").first() is not None
-                finally:
-                    db.close()
-            if busy:
-                print("[跟进] 有投递任务运行中，本次自动跟进跳过")
-                await asyncio.sleep(FOLLOWUP_INTERVAL)
-                continue
-            # 没有登录会话也跳过
-            db = SessionLocal()
-            try:
-                has_session = db.query(PlatformSession).filter(
-                    PlatformSession.user_id == 1,
-                    PlatformSession.platform == "boss",
-                    PlatformSession.is_logged_in == True,  # noqa: E712
-                ).first() is not None
-            finally:
-                db.close()
-            if not has_session:
-                print("[跟进] 无已登录Boss会话，自动跟进跳过")
-                await asyncio.sleep(FOLLOWUP_INTERVAL)
-                continue
-            # 有头模式运行：若弹滑块/需扫码，窗口保留等待用户处理
-            result = await asyncio.to_thread(run_followup_scan_sync, 1, None, False)
-            print(f"[跟进] 自动扫描完成: {result}")
-        except Exception as e:
-            print(f"[跟进] 自动扫描失败: {e}")
-        await asyncio.sleep(FOLLOWUP_INTERVAL)
-
 # ============ 生命周期事件 ============
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -101,18 +52,9 @@ async def lifespan(app: FastAPI):
     os.makedirs(settings.COOKIE_SAVE_DIR, exist_ok=True)
     print("✅ 目录初始化完成")
 
-    # 启动后台自动跟进周期任务（用户出门时自动扫描Boss聊天页更新跟进状态）
-    followup_task = asyncio.create_task(_followup_loop())
-    print("✅ 自动跟进周期任务已启动（每2小时扫描一次）")
 
     yield
 
-    # 关闭：清理资源
-    followup_task.cancel()
-    try:
-        await followup_task
-    except asyncio.CancelledError:
-        pass
     print(f"👋 {settings.APP_NAME} 已关闭")
 
 

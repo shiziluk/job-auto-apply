@@ -40,7 +40,7 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "用户名或密码错误")
     if not user.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "账号已被禁用")
-    token = create_access_token(data={"sub": user.id, "username": user.username})
+    token = create_access_token(data={"sub": str(user.id), "username": user.username})
     return ResponseModel.success(message="登录成功", data={
         "access_token": token,
         "token_type": "bearer",
