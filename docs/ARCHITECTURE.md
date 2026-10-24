@@ -1,4 +1,4 @@
-﻿# 架构说明（公开版）
+# 架构说明（公开版）
 
 > 本文档为项目公开架构说明。内部交接细节（账号状态、真实 JWT、投递统计等）不在此仓库维护。
 
@@ -32,7 +32,7 @@ Vue3 前端（frontend/）──HTTP/JSON──▶ FastAPI 后端（backend/）
 | `app/core/boss/scraper.py` | Boss 职位搜索（API 快路径 + 页面回退、标题过滤） |
 | `app/core/boss/applier.py` | 投递执行器（筛选终检、打招呼、防封节奏） |
 | `app/core/boss/auth.py` | 登录态检测与账号信息获取 |
-| `app/core/boss/followup.py` | 聊天页自动跟进扫描 |
+| `app/core/boss/followup.py` | 聊天页跟进扫描（手动触发） |
 | `app/services/followup_service.py` | 跟进结果落库与统计 |
 | `frontend/src/views/*` | 前端页面（登录、平台授权、搜索、任务、记录、简历、看板） |
 
