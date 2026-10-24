@@ -60,3 +60,9 @@ docs/CONTEXT_STATE.md
 *.exe
 backend/installer/
 backend/build/
+
+# codex_qq 运行时数据（会话映射/日志，含 openid）
+codex_qq/data/
+
+# re-include codex_qq package marker
+!codex_qq/__init__.py
