@@ -1,4 +1,4 @@
-﻿# ===== Web框架 =====
+# ===== Web框架 =====
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 python-multipart==0.0.9
@@ -23,3 +23,4 @@ aiofiles==24.1.0
 # ===== 认证 & 密码哈希 =====
 passlib==1.7.4
 bcrypt==4.3.0
+PyJWT==2.10.1

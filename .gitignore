@@ -53,6 +53,7 @@ Thumbs.db
 _*.py
 _*.txt
 _*.log
+!**/__init__.py
 docs/_ref/
 docs/CONTEXT_STATE.md
 
